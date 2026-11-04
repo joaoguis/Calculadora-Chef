@@ -40,6 +40,7 @@ input:focus,select:focus,button:focus-visible{outline:3px solid var(--acc);outli
 nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
 .tab{flex:1;min-height:60px;border:0;background:none;font-size:17px;font-weight:500;color:var(--mut)}
 .tab[aria-selected="true"]{color:var(--acc);font-weight:700;box-shadow:inset 0 3px 0 var(--acc)}
+.btn2{background:var(--card);color:var(--ink);border:1px solid var(--line)}
 section[hidden]{display:none}
 </style>
 </head>
@@ -47,6 +48,12 @@ section[hidden]{display:none}
 <h1>Calculadora de cozinha</h1>
 
 <section id="s-esc">
+  <div class="card">
+    <label for="rn">Nome da receita</label>
+    <input id="rn" placeholder="Ex.: Massa de pizza">
+    <div class="g2" style="margin-top:8px"><button class="btn" id="sv" type="button">Salvar</button><button class="btn btn2" id="nw" type="button">Nova receita</button></div>
+    <div class="pair" style="margin-top:12px"><select id="rs" aria-label="Minhas receitas"></select><button class="x" id="dl" type="button" aria-label="Apagar receita" style="font-size:16px">Apagar</button></div>
+  </div>
   <div class="card">
     <div class="g2">
       <div><label for="o">Receita original rende</label><div class="pair"><input id="o" inputmode="decimal" value="1"><select id="ou"><option>kg</option><option>g</option><option>L</option><option>ml</option><option>un</option></select></div></div>
@@ -56,7 +63,8 @@ section[hidden]{display:none}
   </div>
   <div class="card">
     <div id="rows"></div>
-    <button class="btn" id="add" type="button">Adicionar ingrediente</button>
+    <div class="g2"><button class="btn" id="add" type="button">Adicionar</button><button class="btn" id="mic" type="button">Falar ingrediente</button></div>
+    <p class="note" id="st">Diga: farinha 500 gramas. Para vários de uma vez, diga próximo entre eles.</p>
   </div>
 </section>
 
@@ -179,6 +187,36 @@ function r3(){
   $('r3').textContent=(a==null||b==null||c==null||a===0)?'':fmt(b*c/a);
 }
 ['a','b','c3'].forEach(i=>$(i).oninput=r3);
+
+/* Receitas salvas */
+const msg=t=>{$('st').textContent=t};
+function recs(){try{return JSON.parse(localStorage.getItem('cc-recipes'))||{}}catch(e){return {}}}
+function putRecs(r){try{localStorage.setItem('cc-recipes',JSON.stringify(r))}catch(e){}}
+function listRecs(sel){const s=$('rs');s.innerHTML='';s.add(new Option('Minhas receitas',''));Object.keys(recs()).forEach(k=>s.add(new Option(k,k)));s.value=sel||''}
+function rowsNow(){return [...document.querySelectorAll('.row')].map(r=>[r.querySelector('.nm').value,r.querySelector('.am').value,r.querySelector('.un').value])}
+$('sv').onclick=()=>{const n=$('rn').value.trim();if(!n){$('rn').focus();return}const r=recs();r[n]={o:$('o').value,ou:$('ou').value,rows:rowsNow()};putRecs(r);listRecs(n);msg('Receita salva: '+n)};
+$('rs').onchange=()=>{const k=$('rs').value,x=recs()[k];if(!x)return;$('rn').value=k;$('o').value=x.o;$('ou').value=x.ou;$('w').value=x.o;$('wu').value=x.ou;$('rows').innerHTML='';x.rows.forEach(a=>addRow(...a));calc();save();msg('Aberta: '+k+'. Mude o Quero fazer.')};
+$('dl').onclick=()=>{const k=$('rs').value;if(!k||!confirm('Apagar '+k+'?'))return;const r=recs();delete r[k];putRecs(r);listRecs();$('rn').value='';msg('Apagada: '+k)};
+$('nw').onclick=()=>{$('rows').innerHTML='';$('rn').value='';$('rs').value='';$('o').value='1';$('w').value='1';$('ou').value='kg';$('wu').value='kg';addRow();calc();save();$('rn').focus()};
+listRecs();
+
+/* Voz */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+const W={um:1,uma:1,dois:2,duas:2,'três':3,tres:3,quatro:4,cinco:5,seis:6,sete:7,oito:8,nove:9,dez:10,meio:.5,meia:.5};
+const RX=/\b(\d+(?:[.,]\d+)?|um|uma|dois|duas|três|tres|quatro|cinco|seis|sete|oito|nove|dez|meio|meia)(?![a-zà-ú])\s*(?:(quilos?|quilogramas?|kg|gramas?|g|mililitros?|ml|litros?|l|unidades?|un)(?=\s|$))?(\s+e\s+meio)?/;
+function unitOf(u){if(!u)return 'un';if(/^qu|^kg/.test(u))return 'kg';if(/^gr|^g$/.test(u))return 'g';if(/^mili|^ml/.test(u))return 'ml';if(/^l/.test(u))return 'L';return 'un'}
+function parse(t){return t.toLowerCase().split(/\s*\bpr[óo]xim[oa]\b\s*/).map(c=>{const m=c.match(RX);if(!m)return null;let a=W[m[1]]!==undefined?W[m[1]]:num(m[1]);if(m[3])a+=.5;const n=c.replace(m[0],' ').replace(/\s+/g,' ').trim().replace(/^(de|do|da)\s+|\s+(de|do|da)$/g,'');return [n,a,unitOf(m[2])]}).filter(Boolean)}
+let rec=null;
+$('mic').onclick=()=>{
+  if(!SR){msg('Sem suporte aqui. Use o microfone do teclado do iPhone no campo Ingrediente.');return}
+  if(rec){rec.stop();return}
+  rec=new SR();rec.lang='pt-BR';rec.interimResults=false;rec.continuous=false;
+  $('mic').textContent='Ouvindo… parar';
+  rec.onresult=e=>{const t=e.results[0][0].transcript,it=parse(t);if(!it.length){msg('Não entendi: '+t);return}it.forEach(([n,a,u])=>addRow(n.charAt(0).toUpperCase()+n.slice(1),String(a).replace('.',','),u));calc();save();msg('Adicionado: '+t)};
+  rec.onerror=e=>msg(e.error==='not-allowed'?'Libere o microfone para este site nos ajustes do Safari.':'Não consegui ouvir. Tente de novo.');
+  rec.onend=()=>{rec=null;$('mic').textContent='Falar ingrediente'};
+  rec.start();
+};
 </script>
 </body>
 </html>
