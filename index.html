@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Calculadora de Cozinha</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;700&display=swap">
+<style>
+:root{--bg:#f2f4f3;--card:#fff;--ink:#14201c;--mut:#5d6b66;--line:#d5dcd9;--acc:#0e6b5c;--onacc:#fff;--tape:#f2c230;--ontape:#14201c;
+color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101715;--card:#18221f;--ink:#eef3f1;--mut:#9aaaa4;--line:#2b3a35;--acc:#3fc2a8;--onacc:#06231d;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#101715;--card:#18221f;--ink:#eef3f1;--mut:#9aaaa4;--line:#2b3a35;--acc:#3fc2a8;--onacc:#06231d;color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.4 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif;padding:14px 14px 96px;max-width:560px;margin-inline:auto}
+h1,.big,.tab{font-family:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif}
+h1{font-size:26px;margin:4px 0 14px;font-weight:700}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+label{display:block;font-size:14px;color:var(--mut);margin-bottom:4px}
+input,select,button{font:inherit;color:var(--ink)}
+input,select{width:100%;min-height:48px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);font-size:18px}
+input:focus,select:focus,button:focus-visible{outline:3px solid var(--acc);outline-offset:1px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pair{display:grid;grid-template-columns:1fr 92px;gap:6px}
+.fac{display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding:10px 14px;background:var(--tape);color:var(--ontape);border-radius:10px}
+.fac b{font-family:"Barlow Semi Condensed",sans-serif;font-size:30px;line-height:1}
+.row{display:grid;grid-template-columns:1fr 84px 76px;grid-template-areas:"n n x" "a u o";gap:8px;padding:12px 0;border-top:1px solid var(--line)}
+.row .nm{grid-area:n}.row .am{grid-area:a}.row .un{grid-area:u;padding:8px 4px}.row .x{grid-area:x}
+.row output{grid-area:o;align-self:center;text-align:right;font-family:"Barlow Semi Condensed",sans-serif;font-weight:700;font-size:24px;color:var(--acc);white-space:nowrap}
+.row output{grid-column:3}
+.row{grid-template-columns:1fr 1fr 1fr}
+.row{grid-template-areas:"n n x" "a u o"}
+.x{min-height:48px;border:1px solid var(--line);background:none;border-radius:10px;font-size:22px;color:var(--mut)}
+.btn{width:100%;min-height:50px;border:0;border-radius:12px;background:var(--acc);color:var(--onacc);font-weight:600;margin-top:8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.chip{min-height:44px;padding:0 14px;border:1px solid var(--line);background:var(--card);border-radius:22px}
+.big{font-size:34px;font-weight:700;color:var(--acc);margin-top:12px;min-height:40px}
+.note{color:var(--mut);font-size:14px;margin:8px 0 0}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tab{flex:1;min-height:60px;border:0;background:none;font-size:17px;font-weight:500;color:var(--mut)}
+.tab[aria-selected="true"]{color:var(--acc);font-weight:700;box-shadow:inset 0 3px 0 var(--acc)}
+section[hidden]{display:none}
+</style>
+</head>
+<body>
+<h1>Calculadora de cozinha</h1>
+
+<section id="s-esc">
+  <div class="card">
+    <div class="g2">
+      <div><label for="o">Receita original rende</label><div class="pair"><input id="o" inputmode="decimal" value="1"><select id="ou"><option>kg</option><option>g</option><option>L</option><option>ml</option><option>un</option></select></div></div>
+      <div><label for="w">Quero fazer</label><div class="pair"><input id="w" inputmode="decimal" value="500"><select id="wu"><option>kg</option><option selected>g</option><option>L</option><option>ml</option><option>un</option></select></div></div>
+    </div>
+    <div class="fac"><span>Multiplicar por</span><b id="f">0,5</b></div>
+  </div>
+  <div class="card">
+    <div id="rows"></div>
+    <button class="btn" id="add" type="button">Adicionar ingrediente</button>
+  </div>
+</section>
+
+<section id="s-tmp" hidden>
+  <div class="card">
+    <div class="g2">
+      <div><label for="c">Celsius (°C)</label><input id="c" inputmode="decimal" placeholder="180"></div>
+      <div><label for="fh">Fahrenheit (°F)</label><input id="fh" inputmode="decimal" placeholder="356"></div>
+    </div>
+    <div class="chips" id="tc"></div>
+    <p class="note">Toque numa temperatura de forno para converter.</p>
+  </div>
+</section>
+
+<section id="s-med" hidden>
+  <div class="card">
+    <label for="mv">Valor</label><input id="mv" inputmode="decimal" value="1">
+    <div class="g2" style="margin-top:10px">
+      <div><label for="mf">De</label><select id="mf"></select></div>
+      <div><label for="mt">Para</label><select id="mt"></select></div>
+    </div>
+    <div class="big" id="mr"></div>
+    <p class="note">Xícara = 240 ml, colher de sopa = 15 ml, colher de chá = 5 ml. Massa e volume não convertem entre si (depende do ingrediente).</p>
+  </div>
+</section>
+
+<section id="s-r3" hidden>
+  <div class="card">
+    <div class="g2">
+      <div><label for="a">Se este valor</label><input id="a" inputmode="decimal" placeholder="1000"></div>
+      <div><label for="b">corresponde a</label><input id="b" inputmode="decimal" placeholder="25"></div>
+    </div>
+    <label for="c3" style="margin-top:10px">então este valor corresponde a</label>
+    <input id="c3" inputmode="decimal" placeholder="3500">
+    <div class="big" id="r3"></div>
+    <p class="note">Exemplo: 25 g de sal para 1000 g de massa. Para 3500 g de massa, quanto de sal?</p>
+  </div>
+</section>
+
+<nav role="tablist">
+  <button class="tab" role="tab" aria-selected="true" data-t="s-esc">Escalar</button>
+  <button class="tab" role="tab" aria-selected="false" data-t="s-tmp">Temperatura</button>
+  <button class="tab" role="tab" aria-selected="false" data-t="s-med">Medidas</button>
+  <button class="tab" role="tab" aria-selected="false" data-t="s-r3">Regra de 3</button>
+</nav>
+
+<script>
+const $=id=>document.getElementById(id);
+const U={g:[1,'m'],kg:[1000,'m'],ml:[1,'v'],L:[1000,'v'],un:[1,'u'],oz:[28.3495,'m'],lb:[453.592,'m'],'xícara':[240,'v'],'colher sopa':[15,'v'],'colher chá':[5,'v']};
+const num=s=>{const n=parseFloat(String(s).replace(',','.'));return isNaN(n)?null:n};
+const fmt=n=>n.toLocaleString('pt-BR',{maximumFractionDigits:2});
+function nice(v,u){
+  if(u==='g'&&v>=1000){v/=1000;u='kg'}else if(u==='kg'&&v<1){v*=1000;u='g'}
+  else if(u==='ml'&&v>=1000){v/=1000;u='L'}else if(u==='L'&&v<1){v*=1000;u='ml'}
+  return fmt(v)+' '+u;
+}
+
+/* Abas */
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',x===t));
+  document.querySelectorAll('section').forEach(s=>s.hidden=s.id!==t.dataset.t);
+});
+
+/* Escalar receita */
+let F=null;
+function factor(){
+  const a=num($('o').value),b=num($('w').value),ua=U[$('ou').value],ub=U[$('wu').value];
+  if(a==null||b==null||a<=0)return null;
+  if(ua[1]!==ub[1])return 'x';
+  return b*ub[0]/(a*ua[0]);
+}
+function save(){
+  try{localStorage.setItem('cc-rows',JSON.stringify([...document.querySelectorAll('.row')].map(r=>[r.querySelector('.nm').value,r.querySelector('.am').value,r.querySelector('.un').value])))}catch(e){}
+}
+function calc(){
+  F=factor();
+  $('f').textContent=F==null?'—':F==='x'?'unidades diferentes':'× '+fmt(F);
+  document.querySelectorAll('.row').forEach(r=>{
+    const a=num(r.querySelector('.am').value),u=r.querySelector('.un').value;
+    r.querySelector('output').textContent=(a==null||typeof F!=='number')?'':nice(a*F,u);
+  });
+}
+function addRow(n='',a='',u='g'){
+  const r=document.createElement('div');r.className='row';
+  r.innerHTML='<input class="nm" placeholder="Ingrediente" aria-label="Ingrediente"><input class="am" inputmode="decimal" placeholder="Qtd" aria-label="Quantidade"><select class="un" aria-label="Unidade">'+['g','kg','ml','L','un'].map(x=>'<option>'+x+'</option>').join('')+'</select><output></output><button class="x" type="button" aria-label="Remover">×</button>';
+  r.querySelector('.nm').value=n;r.querySelector('.am').value=a;r.querySelector('.un').value=u;
+  r.oninput=()=>{calc();save()};
+  r.querySelector('.x').onclick=()=>{r.remove();calc();save()};
+  $('rows').appendChild(r);
+}
+let saved=null;try{saved=JSON.parse(localStorage.getItem('cc-rows'))}catch(e){}
+(saved&&saved.length?saved:[['Farinha','1000','g'],['Água','600','ml'],['Sal','20','g']]).forEach(x=>addRow(...x));
+$('add').onclick=()=>{addRow();$('rows').lastChild.querySelector('.nm').focus()};
+['o','w','ou','wu'].forEach(i=>$(i).oninput=calc);
+calc();
+
+/* Temperatura */
+const r1=n=>Math.round(n*10)/10;
+$('c').oninput=()=>{const v=num($('c').value);$('fh').value=v==null?'':String(r1(v*9/5+32)).replace('.',',')};
+$('fh').oninput=()=>{const v=num($('fh').value);$('c').value=v==null?'':String(r1((v-32)*5/9)).replace('.',',')};
+[100,150,160,180,200,220,250].forEach(t=>{
+  const b=document.createElement('button');b.className='chip';b.type='button';b.textContent=t+' °C';
+  b.onclick=()=>{$('c').value=t;$('c').oninput()};$('tc').appendChild(b);
+});
+
+/* Medidas */
+Object.keys(U).forEach(k=>{$('mf').add(new Option(k));$('mt').add(new Option(k))});
+$('mf').value='g';$('mt').value='kg';
+function med(){
+  const v=num($('mv').value),f=U[$('mf').value],t=U[$('mt').value];
+  if(v==null){$('mr').textContent='';return}
+  if(f[1]!==t[1]){$('mr').textContent='Não converte';return}
+  $('mr').textContent=fmt(v*f[0]/t[0])+' '+$('mt').value;
+}
+['mv','mf','mt'].forEach(i=>$(i).oninput=med);med();
+
+/* Regra de 3 */
+function r3(){
+  const a=num($('a').value),b=num($('b').value),c=num($('c3').value);
+  $('r3').textContent=(a==null||b==null||c==null||a===0)?'':fmt(b*c/a);
+}
+['a','b','c3'].forEach(i=>$(i).oninput=r3);
+</script>
+</body>
+</html>
