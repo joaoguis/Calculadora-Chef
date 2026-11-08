@@ -38,9 +38,11 @@ input:focus,select:focus,button:focus-visible{outline:3px solid var(--acc);outli
 .big{font-size:34px;font-weight:700;color:var(--acc);margin-top:12px;min-height:40px}
 .note{color:var(--mut);font-size:14px;margin:8px 0 0}
 nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
-.tab{flex:1;min-height:60px;border:0;background:none;font-size:17px;font-weight:500;color:var(--mut)}
+.tab{flex:1;min-height:60px;border:0;background:none;font-size:16px;padding:0 2px;font-weight:500;color:var(--mut)}
 .tab[aria-selected="true"]{color:var(--acc);font-weight:700;box-shadow:inset 0 3px 0 var(--acc)}
 .btn2{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.g3 .btn{margin-top:0}
 section[hidden]{display:none}
 </style>
 </head>
@@ -52,7 +54,7 @@ section[hidden]{display:none}
     <label for="rn">Nome da receita</label>
     <input id="rn" placeholder="Ex.: Massa de pizza">
     <div class="g2" style="margin-top:8px"><button class="btn" id="sv" type="button">Salvar</button><button class="btn btn2" id="nw" type="button">Nova receita</button></div>
-    <div class="pair" style="margin-top:12px"><select id="rs" aria-label="Minhas receitas"></select><button class="x" id="dl" type="button" aria-label="Apagar receita" style="font-size:16px">Apagar</button></div>
+    <div style="display:none"><select id="rs" aria-label="Minhas receitas"></select><button class="x" id="dl" type="button" aria-label="Apagar receita" style="font-size:16px">Apagar</button></div>
   </div>
   <div class="card">
     <div class="g2">
@@ -104,11 +106,38 @@ section[hidden]{display:none}
   </div>
 </section>
 
+<section id="s-rec" hidden>
+  <div class="card" id="au">
+    <div id="ao">
+      <label for="em">E-mail</label><input id="em" type="email" autocomplete="email" autocapitalize="none">
+      <label for="pw" style="margin-top:8px">Senha (mínimo 6)</label><input id="pw" type="password" autocomplete="current-password">
+      <label for="un" style="margin-top:8px">@usuário (só pra criar conta)</label><input id="un" autocapitalize="none" placeholder="ex.: chef.joao">
+      <div class="g2"><button class="btn" id="li" type="button">Entrar</button><button class="btn btn2" id="su" type="button">Criar conta</button></div>
+    </div>
+    <div id="ai" hidden><b id="me"></b><button class="btn btn2" id="lo" type="button">Sair</button></div>
+    <p class="note" id="am">Entre pra enviar e receber receitas por @.</p>
+  </div>
+  <div class="card" id="imp" hidden>
+    <b id="in"></b>
+    <div class="g2"><button class="btn" id="ik" type="button">Salvar</button><button class="btn btn2" id="ix" type="button">Descartar</button></div>
+  </div>
+  <div class="card" id="snd" hidden>
+    <b id="sn"></b>
+    <input id="sq" placeholder="Buscar @usuário" autocapitalize="none" style="margin-top:8px">
+    <div id="sr"></div>
+    <div class="g2"><button class="btn btn2" id="sl" type="button">Enviar por link</button><button class="btn btn2" id="sc" type="button">Fechar</button></div>
+  </div>
+  <div id="ib"></div>
+  <div id="rl"></div>
+  <p class="note" id="re">Nenhuma receita salva ainda. Crie na aba Escalar e toque em Salvar.</p>
+</section>
+
 <nav role="tablist">
   <button class="tab" role="tab" aria-selected="true" data-t="s-esc">Escalar</button>
-  <button class="tab" role="tab" aria-selected="false" data-t="s-tmp">Temperatura</button>
+  <button class="tab" role="tab" aria-selected="false" data-t="s-tmp">Temp.</button>
   <button class="tab" role="tab" aria-selected="false" data-t="s-med">Medidas</button>
-  <button class="tab" role="tab" aria-selected="false" data-t="s-r3">Regra de 3</button>
+  <button class="tab" role="tab" aria-selected="false" data-t="s-r3">Regra 3</button>
+  <button class="tab" role="tab" aria-selected="false" data-t="s-rec">Receitas</button>
 </nav>
 
 <script>
@@ -199,6 +228,99 @@ $('rs').onchange=()=>{const k=$('rs').value,x=recs()[k];if(!x)return;$('rn').val
 $('dl').onclick=()=>{const k=$('rs').value;if(!k||!confirm('Apagar '+k+'?'))return;const r=recs();delete r[k];putRecs(r);listRecs();$('rn').value='';msg('Apagada: '+k)};
 $('nw').onclick=()=>{$('rows').innerHTML='';$('rn').value='';$('rs').value='';$('o').value='1';$('w').value='1';$('ou').value='kg';$('wu').value='kg';addRow();calc();save();$('rn').focus()};
 listRecs();
+
+/* Aba Receitas + envio por link */
+function go(id){document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',x.dataset.t===id));document.querySelectorAll('section').forEach(s=>s.hidden=s.id!==id)}
+function openRec(n){const x=recs()[n];if(!x)return;$('rn').value=n;$('o').value=x.o;$('ou').value=x.ou;$('w').value=x.o;$('wu').value=x.ou;$('rows').innerHTML='';x.rows.forEach(a=>addRow(...a));calc();save();go('s-esc');msg('Aberta: '+n+'. Mude o Quero fazer.')}
+function delRec(n){if(!confirm('Apagar '+n+'?'))return;const r=recs();delete r[n];putRecs(r);listRecs();renderRecs();if(S)api('/rest/v1/recipes?name=eq.'+encodeURIComponent(n),{m:'DELETE'}).catch(()=>{})}
+function enc(n,x){return btoa(unescape(encodeURIComponent(JSON.stringify([n,x.o,x.ou,x.rows])))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+function dec(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';return JSON.parse(decodeURIComponent(escape(atob(s))))}
+async function shareRec(n){const x=recs()[n];if(!x)return;const url=location.href.split('#')[0]+'#r='+enc(n,x),text='Receita: '+n;
+  try{if(navigator.share){await navigator.share({title:text,text:text,url:url});return}}catch(e){if(e.name==='AbortError')return}
+  try{await navigator.clipboard.writeText(text+' '+url);alert('Link copiado. Cole no WhatsApp.')}catch(e){prompt('Copie o link:',url)}}
+function renderRecs(){const r=recs(),k=Object.keys(r),box=$('rl');box.innerHTML='';$('re').hidden=k.length>0;
+  k.forEach(n=>{const x=r[n],c=document.createElement('div');c.className='card';
+    const h=document.createElement('b');h.textContent=n;
+    const s=document.createElement('div');s.className='note';s.textContent=x.rows.length+' ingredientes · rende '+x.o+' '+x.ou;
+    const g=document.createElement('div');g.className='g3';
+    [['Abrir',()=>openRec(n)],['Enviar',()=>openSend(n)],['Apagar',()=>delRec(n)]].forEach(([t,f])=>{const b=document.createElement('button');b.className='btn btn2';b.textContent=t;b.onclick=f;g.appendChild(b)});
+    c.append(h,s,g);box.appendChild(c)})}
+document.querySelector('[data-t="s-rec"]').addEventListener('click',renderRecs);
+$('sv').addEventListener('click',()=>setTimeout(renderRecs));
+renderRecs();
+let pend=null;
+const OK=['g','kg','ml','L','un'];
+function clr(){pend=null;$('imp').hidden=true;try{history.replaceState(null,'',location.pathname)}catch(e){}}
+try{const m=location.hash.match(/^#r=(.+)$/);if(m){const d=dec(m[1]);if(Array.isArray(d)&&Array.isArray(d[3])){pend=d;$('in').textContent='Receita recebida: '+String(d[0]).slice(0,80)+' ('+d[3].length+' ingredientes)';$('imp').hidden=false;go('s-rec')}}}catch(e){}
+$('ik').onclick=()=>{if(!pend)return;const r=recs(),rows=pend[3].filter(Array.isArray).slice(0,100).map(a=>[String(a[0]).slice(0,80),String(a[1]).slice(0,20),OK.includes(a[2])?a[2]:'g']);r[String(pend[0]).slice(0,80)]={o:String(pend[1]).slice(0,20),ou:OK.includes(pend[2])?pend[2]:'kg',rows};putRecs(r);listRecs();clr();renderRecs()};
+$('ix').onclick=clr;
+
+/* Conta e envio (Supabase) */
+const SB='https://dwmaiqhypfpluxyktgti.supabase.co',KEY='sb_publishable_xYrwkdrjYqgrjOKCpt46TQ_PimPm6Y2';
+let S=null,ME=null,IN=[],SEND=null,T;
+try{S=JSON.parse(localStorage.getItem('cc-s'))}catch(e){}
+function saveS(s){S=s;try{s?localStorage.setItem('cc-s',JSON.stringify(s)):localStorage.removeItem('cc-s')}catch(e){}}
+async function refresh(){const r=await fetch(SB+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:S.refresh_token})});if(!r.ok){saveS(null);return false}saveS(await r.json());return true}
+async function api(p,o={},retry=true){
+  const h=Object.assign({apikey:KEY,'Content-Type':'application/json'},o.h||{});if(S)h.Authorization='Bearer '+S.access_token;
+  const r=await fetch(SB+p,{method:o.m||'GET',headers:h,body:o.b?JSON.stringify(o.b):undefined});
+  if(r.status===401&&S&&retry&&await refresh())return api(p,o,false);
+  const t=await r.text();let j=null;try{j=t?JSON.parse(t):null}catch(e){}
+  if(!r.ok)throw new Error(pt((j&&(j.msg||j.message||j.error_description))||'Erro '+r.status));
+  return j;
+}
+function pt(m){if(/invalid login/i.test(m))return 'E-mail ou senha errados.';if(/already registered/i.test(m))return 'Esse e-mail já tem conta.';if(/database error/i.test(m))return 'Esse @ já existe ou é inválido.';if(/password/i.test(m))return 'Senha: mínimo 6 caracteres.';return m}
+const am=t=>{$('am').textContent=t};
+const row=(n,x)=>({name:n,yield_amount:x.o,yield_unit:x.ou,rows:x.rows});
+const UP='/rest/v1/recipes?on_conflict=owner,name',MERGE={Prefer:'resolution=merge-duplicates'};
+function ui(){$('ao').hidden=!!S;$('ai').hidden=!S;$('me').textContent=ME?'@'+ME:'';renderIn()}
+async function sync(){
+  const c=await api('/rest/v1/recipes?select=name,yield_amount,yield_unit,rows'),r=recs(),have=new Set();
+  c.forEach(x=>{have.add(x.name);r[x.name]={o:x.yield_amount,ou:x.yield_unit,rows:x.rows}});
+  const up=Object.keys(r).filter(n=>!have.has(n)).map(n=>row(n,r[n]));
+  putRecs(r);if(up.length)await api(UP,{m:'POST',b:up,h:MERGE});
+  listRecs();renderRecs();
+}
+async function inbox(){
+  if(!S)return;
+  IN=await api('/rest/v1/shares?select=id,name,yield_amount,yield_unit,rows,profiles!shares_from_user_fkey(username)&order=created_at.desc&to_user=eq.'+S.user.id);
+  renderIn();
+}
+function renderIn(){
+  const box=$('ib');box.innerHTML='';
+  IN.forEach(x=>{const c=document.createElement('div');c.className='card';
+    const h=document.createElement('b');h.textContent='@'+((x.profiles&&x.profiles.username)||'?')+' enviou: '+x.name;
+    const g=document.createElement('div');g.className='g2';g.style.marginTop='8px';
+    [['Salvar',()=>acceptIn(x)],['Recusar',()=>dropIn(x)]].forEach(([t,f],i)=>{const b=document.createElement('button');b.className='btn'+(i?' btn2':'');b.textContent=t;b.onclick=f;g.appendChild(b)});
+    c.append(h,g);box.appendChild(c)});
+  document.querySelector('[data-t=s-rec]').textContent=IN.length?'Receitas ('+IN.length+')':'Receitas';
+}
+async function dropIn(x){try{await api('/rest/v1/shares?id=eq.'+x.id,{m:'DELETE'});IN=IN.filter(i=>i!==x);renderIn()}catch(e){am(e.message)}}
+async function acceptIn(x){
+  const r=recs();let n=x.name;if(r[n])n+=' (de @'+((x.profiles&&x.profiles.username)||'?')+')';
+  r[n]={o:x.yield_amount,ou:x.yield_unit,rows:x.rows};putRecs(r);listRecs();renderRecs();
+  try{await api(UP,{m:'POST',b:[row(n,r[n])],h:MERGE});await dropIn(x)}catch(e){am(e.message)}
+}
+async function after(){
+  if(S){try{const p=await api('/rest/v1/profiles?select=username&id=eq.'+S.user.id);ME=p&&p[0]?p[0].username:null;await sync();await inbox()}catch(e){am(e.message)}}else ME=null;
+  ui();
+}
+async function enter(path,b){const j=await api(path,{m:'POST',b});if(!j.access_token)throw new Error('Confirme o e-mail e depois toque em Entrar.');saveS(j);await after()}
+$('li').onclick=async()=>{try{am('Entrando…');await enter('/auth/v1/token?grant_type=password',{email:$('em').value.trim(),password:$('pw').value});am('')}catch(e){am(e.message)}};
+$('su').onclick=async()=>{const u=$('un').value.trim().replace(/^@/,'').toLowerCase();if(!/^[a-z0-9_.]{3,20}$/.test(u)){am('@usuário: 3 a 20 letras minúsculas, números, _ ou .');return}try{am('Criando…');await enter('/auth/v1/signup',{email:$('em').value.trim(),password:$('pw').value,data:{username:u}});am('')}catch(e){am(e.message)}};
+$('lo').onclick=async()=>{try{await api('/auth/v1/logout',{m:'POST'})}catch(e){}saveS(null);IN=[];ME=null;ui();am('')};
+$('sv').addEventListener('click',()=>{const n=$('rn').value.trim();if(S&&n&&recs()[n])api(UP,{m:'POST',b:[row(n,recs()[n])],h:MERGE}).catch(e=>msg(e.message))});
+document.querySelector('[data-t=s-rec]').addEventListener('click',()=>{if(S)inbox().catch(()=>{})});
+function openSend(n){if(!S||!ME){shareRec(n);return}SEND=n;$('sn').textContent='Enviar “'+n+'” para:';$('sq').value='';$('sr').innerHTML='';$('snd').hidden=false;$('sq').focus()}
+$('sl').onclick=()=>shareRec(SEND);
+$('sc').onclick=()=>{$('snd').hidden=true};
+$('sq').oninput=()=>{clearTimeout(T);T=setTimeout(async()=>{
+  const q=$('sq').value.trim().replace(/^@/,'').toLowerCase().replace(/[^a-z0-9_.]/g,''),box=$('sr');box.innerHTML='';if(q.length<2)return;
+  try{const p=await api('/rest/v1/profiles?select=id,username&limit=10&username=ilike.'+q+'*');
+    p.filter(u=>u.id!==S.user.id).forEach(u=>{const b=document.createElement('button');b.className='btn btn2';b.textContent='@'+u.username;b.onclick=()=>sendTo(u);box.appendChild(b)});
+    if(!box.children.length)box.textContent='Ninguém encontrado.'}catch(e){box.textContent=e.message}},300)};
+async function sendTo(u){const x=recs()[SEND];if(!x)return;try{await api('/rest/v1/shares',{m:'POST',b:{to_user:u.id,name:SEND,yield_amount:x.o,yield_unit:x.ou,rows:x.rows}});$('snd').hidden=true;alert('Enviada para @'+u.username)}catch(e){alert(e.message)}}
+after();
 
 /* Voz */
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
